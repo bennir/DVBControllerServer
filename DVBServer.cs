@@ -18,23 +18,39 @@ using DVBViewerServer;
 using System.IO;
 using System.Drawing.Imaging;
 using System.Drawing.Drawing2D;
+using Bonjour;
 
 
 namespace DVBViewerController
 {
     public partial class DVBServer : Form
     {
-        private TcpListener tcpListener;
-        private int port;
-        private bool running = false;
+        private TcpListener                 tcpListener =       null;
+        private short                       port =              0;
+        private bool                        running =           false;
 
-        public int[] FavNumbers = new int[] { 38, 11, 12, 13, 14, 15, 16, 17, 18, 19 };
+        public int[]                        FavNumbers =        new int[] { 38, 11, 12, 13, 14, 15, 16, 17, 18, 19 };
 
-        Thread listenThread;
+        Thread                              listenThread =      null;
+        private Object                      thisLock =          new Object();
+
         delegate void addLogCallback(string msg);
-        private Object thisLock = new Object();
 
+        /**
+         * Zeroconf
+         */
 
+        private DNSSDEventManager           mEventManager =     null;
+        private DNSSDService                mService =          null;
+        private DNSSDService                mRegistrar =        null;
+        private DNSSDService                mBrowser =          null;
+        private Socket                      mSocket =           null;
+        private const int                   BUFFER_SIZE =       1024;
+        public byte[]                       mBuffer =           new byte[BUFFER_SIZE];
+        private String                      mName;
+
+        delegate void ReadMessageCallback(String data);
+        ReadMessageCallback mReadMessageCallback;
 
         public DVBServer()
         {
@@ -69,6 +85,25 @@ namespace DVBViewerController
                 stopServer.Visible = false;
                 runServer.Visible = true;
             }
+
+            /**
+             * Zeroconf
+             */
+            try
+            {
+                mService = new DNSSDService();
+            }
+            catch
+            {
+                MessageBox.Show("Bonjour Service is not available", "Error");
+                Application.Exit();
+            }
+
+            mEventManager = new DNSSDEventManager();
+            mEventManager.ServiceRegistered += new _IDNSSDEvents_ServiceRegisteredEventHandler(this.ServiceRegistered);
+            
+
+            mReadMessageCallback = new ReadMessageCallback(OnReadMessage);
         }
 
         private void startServer()
@@ -78,7 +113,7 @@ namespace DVBViewerController
             bool error = false;
             try
             {
-                port = Convert.ToInt32(tbPort.Text);
+                port = Convert.ToInt16(tbPort.Text);
             }
             catch (Exception ex)
             {
@@ -1007,22 +1042,6 @@ namespace DVBViewerController
             }
         }
 
-        private void btnDebug_Click(object sender, EventArgs e)
-        {
-            DVBViewer dvb;
-
-            try
-            {
-                dvb = (DVBViewer)System.Runtime.InteropServices.Marshal.GetActiveObject("DVBViewerServer.DVBViewer");
-
-
-            }
-            catch (Exception ex)
-            {
-                addLog(ex.Message);
-            }
-        }
-
         private void DVBServer_Resize(object sender, EventArgs e)
         {
             if (WindowState == FormWindowState.Normal)
@@ -1059,6 +1078,82 @@ namespace DVBViewerController
             Properties.Settings.Default.debug = cbDebug.Checked;
 
             updateDebugDisplay();
+        }
+
+
+
+        /**
+         * Zeroconf
+         */
+        #region Zeroconf
+
+        public void ServiceRegistered(DNSSDService service, DNSSDFlags flags, String name, String regType, String domain)
+        {
+            mName = name;
+
+            try
+            {
+                mBrowser = mService.Browse(0, 0, "_dvbctrl._udp", null, mEventManager);
+            }
+            catch
+            {
+                MessageBox.Show("Browse Failed", "Error");
+                Application.Exit();
+            }
+        }
+
+        private void OnReadSocket(IAsyncResult ar)
+        {
+            try
+            {
+                int read = mSocket.EndReceive(ar);
+
+                if (read > 0)
+                {
+                    String msg = Encoding.UTF8.GetString(mBuffer, 0, read);
+                    Invoke(mReadMessageCallback, new Object[] { msg });
+                }
+
+                mSocket.BeginReceive(mBuffer, 0, BUFFER_SIZE, 0, new AsyncCallback(OnReadSocket), this);
+            }
+            catch
+            {
+            }
+        }
+
+        private void OnReadMessage(String msg)
+        {
+            addLog(msg);
+        }
+
+        /**
+         * Zeroconf End
+         */
+        #endregion
+
+        private void btnDebug_Click(object sender, EventArgs e)
+        {
+            
+
+        }
+
+        private void DVBServer_Load(object sender, EventArgs e)
+        {
+           /** mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            mSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
+
+            IPEndPoint localEP = (IPEndPoint)mSocket.LocalEndPoint;
+
+            mSocket.BeginReceive(mBuffer, 0, BUFFER_SIZE, 0, new AsyncCallback(this.OnReadSocket), this);
+            */
+            try
+            {
+                mRegistrar = mService.Register(0, 0, System.Environment.UserName, "_dvbctrl._tcp", "local", null, (ushort)this.port, null, mEventManager);
+            }
+            catch (Exception ex)
+            {
+                addLog(ex.Message);
+            }
         }
     }
 }

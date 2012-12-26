@@ -161,6 +161,7 @@
             this.Name = "DVBServer";
             this.Text = "DVBViewer Controller";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.DVBServer_FormClosing);
+            this.Load += new System.EventHandler(this.DVBServer_Load);
             this.Resize += new System.EventHandler(this.DVBServer_Resize);
             this.ResumeLayout(false);
             this.PerformLayout();
