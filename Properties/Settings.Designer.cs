@@ -70,5 +70,29 @@ namespace DVBViewerController.Properties {
                 this["port"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string recIP {
+            get {
+                return ((string)(this["recIP"]));
+            }
+            set {
+                this["recIP"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string recPort {
+            get {
+                return ((string)(this["recPort"]));
+            }
+            set {
+                this["recPort"] = value;
+            }
+        }
     }
 }

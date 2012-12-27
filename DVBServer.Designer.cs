@@ -40,6 +40,7 @@
             this.cbStartServer = new System.Windows.Forms.CheckBox();
             this.cbMinimizeOnStart = new System.Windows.Forms.CheckBox();
             this.cbDebug = new System.Windows.Forms.CheckBox();
+            this.btnRecService = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnDebug
@@ -143,11 +144,22 @@
             this.cbDebug.UseVisualStyleBackColor = true;
             this.cbDebug.CheckedChanged += new System.EventHandler(this.cbDebug_CheckedChanged);
             // 
+            // btnRecService
+            // 
+            this.btnRecService.Location = new System.Drawing.Point(241, 8);
+            this.btnRecService.Name = "btnRecService";
+            this.btnRecService.Size = new System.Drawing.Size(113, 23);
+            this.btnRecService.TabIndex = 11;
+            this.btnRecService.Text = "Recording Service";
+            this.btnRecService.UseVisualStyleBackColor = true;
+            this.btnRecService.Click += new System.EventHandler(this.btnRecService_Click);
+            // 
             // DVBServer
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(359, 422);
+            this.Controls.Add(this.btnRecService);
             this.Controls.Add(this.cbDebug);
             this.Controls.Add(this.cbMinimizeOnStart);
             this.Controls.Add(this.cbStartServer);
@@ -180,6 +192,7 @@
         private System.Windows.Forms.CheckBox cbStartServer;
         private System.Windows.Forms.CheckBox cbMinimizeOnStart;
         private System.Windows.Forms.CheckBox cbDebug;
+        private System.Windows.Forms.Button btnRecService;
     }
 }
 

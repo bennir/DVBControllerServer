@@ -14,5 +14,11 @@
     <Setting Name="port" Type="System.String" Scope="User">
       <Value Profile="(Default)">8000</Value>
     </Setting>
+    <Setting Name="recIP" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="recPort" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>

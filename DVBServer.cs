@@ -1,24 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using System.Text.RegularExpressions;
-using System.Runtime.InteropServices;
-
-
-using DVBViewerServer;
-using System.IO;
-using System.Drawing.Imaging;
-using System.Drawing.Drawing2D;
 using Bonjour;
+using DVBViewerServer;
 
 
 namespace DVBViewerController
@@ -39,14 +31,17 @@ namespace DVBViewerController
         /**
          * Zeroconf
          */
-
         private DNSSDEventManager           mEventManager =     null;
         private DNSSDService                mService =          null;
         private DNSSDService                mRegistrar =        null;
         private DNSSDService                mBrowser =          null;
-        private const int                   BUFFER_SIZE =       1024;
-        public byte[]                       mBuffer =           new byte[BUFFER_SIZE];
         private String                      mName;
+
+        /**
+         * Recording Service
+         */
+        public string                       recIP =             null;
+        public string                       recPort =           null;
 
         public DVBServer()
         {
@@ -55,6 +50,8 @@ namespace DVBViewerController
             cbDebug.Checked = Properties.Settings.Default.debug;
             cbMinimizeOnStart.Checked = Properties.Settings.Default.minimizeOnStart;
             cbStartServer.Checked = Properties.Settings.Default.startServer;
+            recIP = Properties.Settings.Default.recIP;
+            recPort = Properties.Settings.Default.recPort;
 
             tbPort.Text = Properties.Settings.Default.port;
 
@@ -224,6 +221,15 @@ namespace DVBViewerController
                             case "getCurrentChanName":
                                 {
                                     msg = DVBgetCurrentChanName();
+
+                                    Byte[] res = BuildResponse(sHttpVersion, msg);
+                                    clientStream.Write(res, 0, res.Length);
+
+                                    break;
+                                }
+                            case "getRecordingService":
+                                {
+                                    msg = DVBgetRecordingService();
 
                                     Byte[] res = BuildResponse(sHttpVersion, msg);
                                     clientStream.Write(res, 0, res.Length);
@@ -872,6 +878,35 @@ namespace DVBViewerController
             return resp;
         }
 
+        private string DVBgetRecordingService()
+        {
+            string resp = "";
+            ushort port;
+
+            try
+            {
+                port = UInt16.Parse(recPort);
+
+                if (!IsIPv4(recIP))
+                    throw new Exception();
+
+                resp += "{ \"recordingService\": {";
+                resp += "  \"ip\": \"" + recIP + "\",";
+                resp += "  \"port\": \"" + recPort + "\"";
+                resp += "} }";
+            }
+            catch (Exception ex)
+            {
+                addLog("DVBViewer not running");
+                resp += "{ \"recordingService\": {";
+                resp += "  \"ip\": \"0.0.0.0\",";
+                resp += "  \"port\": \"0\"";
+                resp += "} }";
+            }
+
+            return resp;
+        }
+
         private string DVBgetLogo(string file)
         {
             DVBViewer dvb;
@@ -1013,6 +1048,21 @@ namespace DVBViewerController
             mySocket.Send(bSendData, bSendData.Length, 0);
         }
 
+        public static bool IsIPv4(string value)
+        {
+            IPAddress address;
+
+            if (IPAddress.TryParse(value, out address))
+            {
+                if (address.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void updateDebugDisplay()
         {
             if (Properties.Settings.Default.debug)
@@ -1115,6 +1165,12 @@ namespace DVBViewerController
             {
                 addLog(ex.Message);
             }
+        }
+
+        private void btnRecService_Click(object sender, EventArgs e)
+        {
+            RecordingService rec = new RecordingService(this);
+            rec.ShowDialog();
         }
     }
 }
