@@ -44,13 +44,9 @@ namespace DVBViewerController
         private DNSSDService                mService =          null;
         private DNSSDService                mRegistrar =        null;
         private DNSSDService                mBrowser =          null;
-        private Socket                      mSocket =           null;
         private const int                   BUFFER_SIZE =       1024;
         public byte[]                       mBuffer =           new byte[BUFFER_SIZE];
         private String                      mName;
-
-        delegate void ReadMessageCallback(String data);
-        ReadMessageCallback mReadMessageCallback;
 
         public DVBServer()
         {
@@ -101,9 +97,6 @@ namespace DVBViewerController
 
             mEventManager = new DNSSDEventManager();
             mEventManager.ServiceRegistered += new _IDNSSDEvents_ServiceRegisteredEventHandler(this.ServiceRegistered);
-            
-
-            mReadMessageCallback = new ReadMessageCallback(OnReadMessage);
         }
 
         private void startServer()
@@ -1101,31 +1094,6 @@ namespace DVBViewerController
                 Application.Exit();
             }
         }
-
-        private void OnReadSocket(IAsyncResult ar)
-        {
-            try
-            {
-                int read = mSocket.EndReceive(ar);
-
-                if (read > 0)
-                {
-                    String msg = Encoding.UTF8.GetString(mBuffer, 0, read);
-                    Invoke(mReadMessageCallback, new Object[] { msg });
-                }
-
-                mSocket.BeginReceive(mBuffer, 0, BUFFER_SIZE, 0, new AsyncCallback(OnReadSocket), this);
-            }
-            catch
-            {
-            }
-        }
-
-        private void OnReadMessage(String msg)
-        {
-            addLog(msg);
-        }
-
         /**
          * Zeroconf End
          */
@@ -1139,13 +1107,6 @@ namespace DVBViewerController
 
         private void DVBServer_Load(object sender, EventArgs e)
         {
-           /** mSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            mSocket.Bind(new IPEndPoint(IPAddress.Any, 0));
-
-            IPEndPoint localEP = (IPEndPoint)mSocket.LocalEndPoint;
-
-            mSocket.BeginReceive(mBuffer, 0, BUFFER_SIZE, 0, new AsyncCallback(this.OnReadSocket), this);
-            */
             try
             {
                 mRegistrar = mService.Register(0, 0, System.Environment.UserName, "_dvbctrl._tcp", "local", null, (ushort)this.port, null, mEventManager);
