@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 using Bonjour;
@@ -729,6 +730,7 @@ namespace DVBViewerController
                 addLog(ex.Message);
             }
         }
+        
 
         private string DVBgetChannelEPG(string channelId, string time, string sYear, string sMonth, string sDay)
         {
@@ -853,19 +855,50 @@ namespace DVBViewerController
 
                 IFavoritesManager fav = dvb.FavoritesManager;
                 IFavoritesCollection favcol = fav.GetFavorites();
+                IEPGManager epgManager = dvb.EPGManager;
+
+                DateTime start = DateTime.Now;
+                DateTime stop = start.AddSeconds(1);
 
                 resp += "{ \"channels\": [";
 
                 for (i = 0; i < favcol.Count; i++)
                 {
+                    resp += "{";
+                    resp += "\"name\" : \"" + favcol[i].Name + "\",";
+                    resp += "\"id\" : \"" + favcol[i].Nr + "\",";
+                    resp += "\"group\" : \"" + favcol[i].Group + "\",";
+                    resp += "\"channelid\" : \"" + favcol[i].ChannelID + "\"";
+
+                    try
+                    {
+                        IChannelCollection col = dvb.ChannelManager;
+
+                        int channelNr = 0;
+                        IChannelItem channel = col.GetChannel(favcol[i].ChannelID, ref channelNr);
+                        IEPGCollection epgCol = epgManager.Get(channel.Tuner.SID, channel.Tuner.TransportStreamID, start, stop);
+
+                        string epgTitle = epgCol[0].Title;
+                        string epgTime = epgCol[0].Time.ToShortTimeString();
+                        string epgDuration = epgCol[0].Duration.ToShortTimeString();
+
+                        resp += ",";
+                        resp += "\"epgtitle\" : \"" + epgTitle + "\",";
+                        resp += "\"epgtime\" : \"" + epgTime + "\",";
+                        resp += "\"epgduration\" : \"" + epgDuration + "\"";
+                    }
+                    catch (Exception ex)
+                    {
+                        // Can not retrieve EPG
+                        resp += ",";
+                        resp += "\"epgtitle\" : \"\",";
+                        resp += "\"epgtime\" : \"\",";
+                        resp += "\"epgduration\" : \"\"";
+                    }
+
+                    resp += "}";
                     if (i != (favcol.Count - 1))
-                    {
-                        resp += "{ \"name\" : \"" + favcol[i].Name + "\", \"id\" : \"" + favcol[i].Nr + "\", \"group\" : \"" + favcol[i].Group + "\", \"channelid\" : \"" + favcol[i].ChannelID + "\" },";
-                    }
-                    else
-                    {
-                        resp += "{ \"name\" : \"" + favcol[i].Name + "\", \"id\" : \"" + favcol[i].Nr + "\", \"group\" : \"" + favcol[i].Group + "\", \"channelid\" : \"" + favcol[i].ChannelID + "\" }";
-                    }
+                        resp += ",";
                 }
                 resp += "] }";
             }
@@ -921,6 +954,9 @@ namespace DVBViewerController
 
                 string search = file;
                 search = search.ToLower();
+                string pattern = "\\s\\([a-z]{3}\\)";
+                Regex rgx = new Regex(pattern);
+                search = rgx.Replace(search, "");
                 search += ".png";
 
                 string appfolder = data.get_Value("#appfolder") + "Images\\Logos\\";
