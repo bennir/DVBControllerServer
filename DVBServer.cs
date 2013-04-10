@@ -883,7 +883,7 @@ namespace DVBViewerController
                         string epgDuration = epgCol[0].Duration.ToShortTimeString();
 
                         resp += ",";
-                        resp += "\"epgtitle\" : \"" + epgTitle + "\",";
+                        resp += "\"epgtitle\" : \"" + Uri.EscapeDataString(epgTitle) + "\",";
                         resp += "\"epgtime\" : \"" + epgTime + "\",";
                         resp += "\"epgduration\" : \"" + epgDuration + "\"";
                     }
@@ -954,18 +954,38 @@ namespace DVBViewerController
 
                 string search = file;
                 search = search.ToLower();
-                string pattern = "\\s\\([a-z]{3}\\)";
+                //string pattern = "\\s\\([a-z]{3}\\)";
+
+                string pattern = "\\s\\(.+\\)";
                 Regex rgx = new Regex(pattern);
                 search = rgx.Replace(search, "");
-                search += ".png";
+
+                pattern = "\\.";
+                rgx = new Regex(pattern);
+                search = rgx.Replace(search, " ");
+
+
+                //addLog("Suchstring: " + search);
+                //search += ".png";
 
                 string appfolder = data.get_Value("#appfolder") + "Images\\Logos\\";
+                /**
+                                var files = (from datei in new DirectoryInfo(@appfolder).GetFiles()
+                                            where datei.Name.StartsWith(search)
+                                            orderby datei.Name.Length ascending
+                                            select datei).ToList();
 
-                String[] logoFiles = Directory.GetFiles(appfolder, search, SearchOption.AllDirectories);
+                                filename = files[0].ToString();
+
+*/
+
+                String[] logoFiles = Directory.GetFiles(appfolder, search+"*.png", SearchOption.AllDirectories);
                 if (logoFiles.Length != 0)
                 {
                     filename = logoFiles[0];
                 }
+                addLog(filename);
+                     
             }
             catch (Exception ex)
             {
@@ -1050,6 +1070,8 @@ namespace DVBViewerController
                 running = false;
                 stopServer.Visible = false;
                 runServer.Visible = true;
+
+                this.Close();
             }
         }
 
