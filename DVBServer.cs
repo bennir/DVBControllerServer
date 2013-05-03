@@ -26,6 +26,7 @@ namespace DVBViewerController
 
         Thread                              listenThread =      null;
         private Object                      thisLock =          new Object();
+        private volatile bool KillThreads = false;
 
         delegate void addLogCallback(string msg);
 
@@ -135,6 +136,9 @@ namespace DVBViewerController
 
         private void ListenForClients()
         {
+            if (KillThreads)
+                return;
+
             tcpListener.Start();
 
             while (true)
@@ -153,6 +157,9 @@ namespace DVBViewerController
 
         private void HandleClientComm(object client)
         {
+            if (KillThreads)
+                return;
+
             TcpClient tcpClient = (TcpClient)client;
             NetworkStream clientStream = tcpClient.GetStream();
             ASCIIEncoding encoder = new ASCIIEncoding();
@@ -864,8 +871,13 @@ namespace DVBViewerController
 
                 for (i = 0; i < favcol.Count; i++)
                 {
+                    String channelName = favcol[i].Name;
+                    string pattern = "\\s\\(.+\\)";
+                    Regex rgx = new Regex(pattern);
+                    channelName = rgx.Replace(channelName, "");
+
                     resp += "{";
-                    resp += "\"name\" : \"" + favcol[i].Name + "\",";
+                    resp += "\"name\" : \"" + channelName + "\",";
                     resp += "\"id\" : \"" + favcol[i].Nr + "\",";
                     resp += "\"group\" : \"" + favcol[i].Group + "\",";
                     resp += "\"channelid\" : \"" + favcol[i].ChannelID + "\"";
@@ -1038,7 +1050,6 @@ namespace DVBViewerController
                 runServer.Visible = true;
 
                 addLog("Server stopping...");
-                listenThread.Abort();
             }
         }
 
@@ -1062,7 +1073,7 @@ namespace DVBViewerController
             }
 
             Properties.Settings.Default.Save();
-
+            /**
             if (running)
             {
                 tcpListener.Stop();
@@ -1073,6 +1084,33 @@ namespace DVBViewerController
 
                 this.Close();
             }
+             * */
+
+            if (!listenThread.Join(0))
+            {
+                e.Cancel = true;
+                KillThreads = true;
+                tcpListener.Stop();
+                listenThread.Abort();
+                var timer = new System.Timers.Timer();
+                timer.AutoReset = false;
+                timer.SynchronizingObject = this;
+                timer.Interval = 1000;
+                timer.Elapsed += (send, args) =>
+                {
+                    if (listenThread.Join(0))
+                    {
+                        Close();
+                    }
+                    else
+                    {
+                        timer.Start();
+                    }
+                };
+                timer.Start();
+            }
+
+
         }
 
         public void SendResponse(string sHttpVersion, string sData, ref Socket mySocket)
