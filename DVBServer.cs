@@ -1073,18 +1073,6 @@ namespace DVBViewerController
             }
 
             Properties.Settings.Default.Save();
-            /**
-            if (running)
-            {
-                tcpListener.Stop();
-                listenThread.Abort();
-                running = false;
-                stopServer.Visible = false;
-                runServer.Visible = true;
-
-                this.Close();
-            }
-             * */
 
             if (!listenThread.Join(0))
             {
@@ -1163,19 +1151,29 @@ namespace DVBViewerController
         {
             if (Properties.Settings.Default.debug)
             {
-                // 375; 460
-                this.Size = new Size(375, 460);
-                this.MinimumSize = new Size(375, 460);
-                this.MaximumSize = new Size(375, 460);
+                // 375; 460 default dpi
+                int bottom = tbLog.Location.Y + tbLog.Height + 50;
+                int right = tbLog.Location.X + tbLog.Width + 25;
+                Size window = new Size(right, bottom);
+
+                this.Size = window;
+                this.MinimumSize = window;
+                this.MaximumSize = window;
+
                 btnDebug.Visible = true;
                 tbLog.Visible = true;
             }
             else
             {
-                // 375; 138
-                this.Size = new Size(375, 138);
-                this.MinimumSize = new Size(375, 138);
-                this.MaximumSize = new Size(375, 138);
+                // 375; 138 default dpi
+                int bottom = btnDebug.Location.Y + btnDebug.Height + 50;
+                int right = btnDebug.Location.X + btnDebug.Width + 25;
+                Size window = new Size(right, bottom);
+
+                this.Size = window;
+                this.MinimumSize = window;
+                this.MaximumSize = window;
+
                 btnDebug.Visible = false;
                 tbLog.Visible = false;
             }
@@ -1190,7 +1188,7 @@ namespace DVBViewerController
             else if (WindowState == FormWindowState.Minimized)
             {
                 DVBNotification.Visible = true;
-                DVBNotification.ShowBalloonTip(100);
+                DVBNotification.ShowBalloonTip(50);
                 Hide();
             }
         }
