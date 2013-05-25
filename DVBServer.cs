@@ -443,7 +443,7 @@ namespace DVBViewerController
                                         //BinaryReader bFile = new BinaryReader(fStream);
 
                                         MemoryStream mStream = new MemoryStream();
-                                        Bitmap image = ResizeToLongSide(Image.FromFile(filename), 75);
+                                        Bitmap image = ResizeToLongSide(Image.FromFile(filename), 200);
                                         image.Save(mStream, ImageFormat.Png);
 
                                         //BinaryReader bFile = new BinaryReader(mStream);
