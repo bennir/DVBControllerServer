@@ -1035,6 +1035,25 @@ namespace DVBViewerController
         private void runServer_Click(object sender, EventArgs e)
         {
             startServer();
+
+            try
+            {
+                mService = new DNSSDService();
+            }
+            catch
+            {
+                MessageBox.Show("Bonjour Service is not available", "Error");
+                Application.Exit();
+            }
+
+            try
+            {
+                mRegistrar = mService.Register(0, 0, System.Environment.UserName, "_dvbctrl._tcp", "local", null, (ushort)this.port, null, mEventManager);
+            }
+            catch (Exception ex)
+            {
+                addLog(ex.Message);
+            }
         }
 
         private void stopServer_Click(object sender, EventArgs e)
@@ -1051,6 +1070,7 @@ namespace DVBViewerController
 
                 addLog("Server stopping...");
             }
+            mService.Stop();
         }
 
         private void DVBServer_FormClosing(object sender, FormClosingEventArgs e)
