@@ -52,6 +52,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BonjourErrorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="BonjourErrorForm.Designer.cs">
+      <DependentUpon>BonjourErrorForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="DVBServer.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -66,6 +72,9 @@
     <Compile Include="RecordingService.Designer.cs">
       <DependentUpon>RecordingService.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="BonjourErrorForm.resx">
+      <DependentUpon>BonjourErrorForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="DVBServer.resx">
       <DependentUpon>DVBServer.cs</DependentUpon>
     </EmbeddedResource>

@@ -95,11 +95,8 @@
             // 
             // DVBNotification
             // 
-            this.DVBNotification.BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Info;
-            this.DVBNotification.BalloonTipText = "DVBViewer Controller is now minimized";
-            this.DVBNotification.BalloonTipTitle = "Minimized to tray";
             this.DVBNotification.Icon = ((System.Drawing.Icon)(resources.GetObject("DVBNotification.Icon")));
-            this.DVBNotification.Text = "notifyIcon1";
+            this.DVBNotification.Text = "DVBViewer Controller";
             this.DVBNotification.Click += new System.EventHandler(this.DVBNotification_Click);
             // 
             // lblPort

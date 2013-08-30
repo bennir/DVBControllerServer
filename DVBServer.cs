@@ -112,6 +112,25 @@ namespace DVBViewerController
                 MessageBox.Show("Bitte Zahl als Port angeben!");
             }
 
+            try
+            {
+                mService = new DNSSDService();
+            }
+            catch
+            {
+                new BonjourErrorForm().ShowDialog();
+                Application.Exit();
+            }
+
+            try
+            {
+                mRegistrar = mService.Register(0, 0, System.Environment.UserName, "_dvbctrl._tcp", "local", null, (ushort)this.port, null, mEventManager);
+            }
+            catch (Exception ex)
+            {
+                addLog(ex.Message);
+            }
+
             if (!error)
             {
                 try
@@ -1035,25 +1054,6 @@ namespace DVBViewerController
         private void runServer_Click(object sender, EventArgs e)
         {
             startServer();
-
-            try
-            {
-                mService = new DNSSDService();
-            }
-            catch
-            {
-                MessageBox.Show("Bonjour Service is not available", "Error");
-                Application.Exit();
-            }
-
-            try
-            {
-                mRegistrar = mService.Register(0, 0, System.Environment.UserName, "_dvbctrl._tcp", "local", null, (ushort)this.port, null, mEventManager);
-            }
-            catch (Exception ex)
-            {
-                addLog(ex.Message);
-            }
         }
 
         private void stopServer_Click(object sender, EventArgs e)
@@ -1070,7 +1070,9 @@ namespace DVBViewerController
 
                 addLog("Server stopping...");
             }
+
             mService.Stop();
+            mRegistrar.Stop();
         }
 
         private void DVBServer_FormClosing(object sender, FormClosingEventArgs e)
@@ -1208,7 +1210,6 @@ namespace DVBViewerController
             else if (WindowState == FormWindowState.Minimized)
             {
                 DVBNotification.Visible = true;
-                DVBNotification.ShowBalloonTip(50);
                 Hide();
             }
         }
@@ -1271,6 +1272,7 @@ namespace DVBViewerController
 
         private void DVBServer_Load(object sender, EventArgs e)
         {
+            /*
             try
             {
                 mRegistrar = mService.Register(0, 0, System.Environment.UserName, "_dvbctrl._tcp", "local", null, (ushort)this.port, null, mEventManager);
@@ -1279,6 +1281,7 @@ namespace DVBViewerController
             {
                 addLog(ex.Message);
             }
+             */
         }
 
         private void btnRecService_Click(object sender, EventArgs e)
