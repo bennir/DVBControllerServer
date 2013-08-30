@@ -458,23 +458,12 @@ namespace DVBViewerController
 
                                     if (filename != "")
                                     {
-                                        //FileStream fStream = File.Open(filename, FileMode.Open);
-                                        //BinaryReader bFile = new BinaryReader(fStream);
-
                                         MemoryStream mStream = new MemoryStream();
                                         Bitmap image = ResizeToLongSide(Image.FromFile(filename), 200);
                                         image.Save(mStream, ImageFormat.Png);
 
-                                        //BinaryReader bFile = new BinaryReader(mStream);
-
-                                        //int size = (int)bFile.BaseStream.Length;
-                                        //Byte[] img = bFile.ReadBytes(size);
-
                                         Byte[] img = mStream.ToArray();
                                         int size = img.Length;
-
-                                        //addLog(img.ToString());
-                                        //addLog(size.ToString());
 
                                         Byte[] res = BuildImageHeader(sHttpVersion, size);
                                         clientStream.Write(res, 0, res.Length);
@@ -482,6 +471,10 @@ namespace DVBViewerController
                                         addLog("Sent " + size + " Bytes Picture");
 
                                         mStream.Close();
+                                    }
+                                    else
+                                    {
+                                        clientStream.Close();
                                     }
 
                                     break;
@@ -537,6 +530,22 @@ namespace DVBViewerController
             Byte[] res = Encoding.ASCII.GetBytes(sBuffer);
 
             addLog("Sent " + res.Length + " Bytes Header");
+
+            return res;
+        }
+
+        public Byte[] Build404Response(string sHttpVersion)
+        {
+            string HttpDate = DateTime.Now.ToUniversalTime().ToString("r");
+            String sBuffer = "";
+            sBuffer += "HTTP/1.1 404 Not Found" + "\n";
+            sBuffer += "Date: " + HttpDate + "\n";
+            sBuffer += "Content-Type: text/html\n\n";
+
+            Byte[] bSendData = Encoding.UTF8.GetBytes(sBuffer);
+
+            Byte[] res = Encoding.UTF8.GetBytes(sBuffer);
+            addLog("Sent " + res.Length + " Bytes");
 
             return res;
         }
@@ -980,12 +989,10 @@ namespace DVBViewerController
                 dvb = (DVBViewer)System.Runtime.InteropServices.Marshal.GetActiveObject("DVBViewerServer.DVBViewer");
 
 
-                // #appfolder=C:\Program Files (x86)\DVBViewer\;
                 IDataManager data = dvb.DataManager;
 
                 string search = file;
                 search = search.ToLower();
-                //string pattern = "\\s\\([a-z]{3}\\)";
 
                 string pattern = "\\s\\(.+\\)";
                 Regex rgx = new Regex(pattern);
@@ -995,20 +1002,7 @@ namespace DVBViewerController
                 rgx = new Regex(pattern);
                 search = rgx.Replace(search, " ");
 
-
-                //addLog("Suchstring: " + search);
-                //search += ".png";
-
                 string appfolder = data.get_Value("#appfolder") + "Images\\Logos\\";
-                /**
-                                var files = (from datei in new DirectoryInfo(@appfolder).GetFiles()
-                                            where datei.Name.StartsWith(search)
-                                            orderby datei.Name.Length ascending
-                                            select datei).ToList();
-
-                                filename = files[0].ToString();
-
-*/
 
                 String[] logoFiles = Directory.GetFiles(appfolder, search+"*.png", SearchOption.AllDirectories);
                 if (logoFiles.Length != 0)
@@ -1121,37 +1115,6 @@ namespace DVBViewerController
             }
 
 
-        }
-
-        public void SendResponse(string sHttpVersion, string sData, ref Socket mySocket)
-        {
-            Byte[] data = Encoding.UTF8.GetBytes(sData);
-            string HttpDate = DateTime.Now.ToUniversalTime().ToString("r");
-            String sBuffer = "";
-            sBuffer += "HTTP/1.1 200 OK\n";
-            sBuffer += "Date: " + HttpDate + "\n";
-            sBuffer += "Content-Type: text/html\n";
-            sBuffer += "Content-Length: " + data.Length + "\n";
-            sBuffer += "Connection: close\n\n";
-            sBuffer += sData;
-
-            Byte[] res = Encoding.UTF8.GetBytes(sBuffer);
-
-            mySocket.Send(res, res.Length, 0);
-
-            addLog("Sent " + res.Length + " Bytes");
-        }
-
-        public void Send404(ref Socket mySocket)
-        {
-
-            String sBuffer = "";
-            sBuffer += "HTTP/1.1 404 Not Found" + "\n";
-            sBuffer += "Content-Type: text/html\n\n";
-
-            Byte[] bSendData = Encoding.UTF8.GetBytes(sBuffer);
-
-            mySocket.Send(bSendData, bSendData.Length, 0);
         }
 
         public static bool IsIPv4(string value)
