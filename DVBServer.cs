@@ -206,12 +206,17 @@ namespace DVBViewerController
 
                 string sBuffer = encoder.GetString(message, 0, bytesRead);
 
-                // Only GET
-                if (sBuffer.Substring(0, 3) != "GET")
-                {
-                    addLog("Only GET requests are supported");
+                addLog(sBuffer);
 
-                    break;
+                // Only GET
+                if (sBuffer.Length > 3)
+                {
+                    if (sBuffer.Substring(0, 3) != "GET")
+                    {
+                        addLog("Only GET requests are supported");
+
+                        break;
+                    }
                 }
 
                 // Look for HTTP request
@@ -483,7 +488,8 @@ namespace DVBViewerController
                                 break;
                         }
                     }
-                }                
+                }
+                clientStream.Close();
             } // while ende
             tcpClient.Close();
         }
@@ -524,8 +530,8 @@ namespace DVBViewerController
             sBuffer += "HTTP/1.1 200 OK\n";
             sBuffer += "Date: " + HttpDate + "\n";
             sBuffer += "Content-Type: image/png\n";
-            sBuffer += "Content-Length: " + bytes + "\n";
-            sBuffer += "Connection: close\n\n";
+            sBuffer += "Connection: close\n";
+            sBuffer += "Content-Length: " + bytes + "\n\n";
 
             Byte[] res = Encoding.ASCII.GetBytes(sBuffer);
 
@@ -540,6 +546,7 @@ namespace DVBViewerController
             String sBuffer = "";
             sBuffer += "HTTP/1.1 404 Not Found" + "\n";
             sBuffer += "Date: " + HttpDate + "\n";
+            sBuffer += "Connection: close\n";
             sBuffer += "Content-Type: text/html\n\n";
 
             Byte[] bSendData = Encoding.UTF8.GetBytes(sBuffer);
@@ -556,10 +563,11 @@ namespace DVBViewerController
             string HttpDate = DateTime.Now.ToUniversalTime().ToString("r");
             String sBuffer = "";
             sBuffer += "HTTP/1.1 200 OK\n";
-            sBuffer += "Date: " + HttpDate + "\n";
-            sBuffer += "Content-Type: text/html\n";
-            sBuffer += "Content-Length: " + data.Length + "\n";
-            sBuffer += "Connection: close\n\n";
+            sBuffer += "Content-Type: text/html; charset=UTF-8\n";
+            sBuffer += "Connection: close\n";
+            sBuffer += "Content-Length: " + sData.Length + "\n";
+            sBuffer += "Server: DVBViewer Controller Server\n";
+            sBuffer += "Date: " + HttpDate + "\n\n";
             sBuffer += sData;
 
             Byte[] res = Encoding.UTF8.GetBytes(sBuffer);
