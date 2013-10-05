@@ -30,6 +30,7 @@ namespace DVBViewerController
         public override void OnRequest(IRequest request)
         {
             var response = request.CreateResponse(HttpStatusCode.OK, "Welcome");
+            response.KeepAlive = false;
 
             response.Body = new MemoryStream();
             response.ContentType = "text/plain";
