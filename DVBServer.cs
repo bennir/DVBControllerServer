@@ -12,21 +12,24 @@ using System.Threading;
 using System.Windows.Forms;
 using Bonjour;
 using DVBViewerServer;
+using Griffin.Networking.Servers;
+using Griffin.Networking.Protocol.Http;
+using Griffin.Networking.Buffers;
+using Griffin.Networking.Protocol.Http.Protocol;
+using Griffin.Networking.Messaging;
 
 
 namespace DVBViewerController
 {
+    
+
     public partial class DVBServer : Form
     {
-        private TcpListener                 tcpListener =       null;
+        public MessagingServer              listener;
+
         private short                       port =              0;
-        private bool                        running =           false;
 
         public int[]                        FavNumbers =        new int[] { 38, 11, 12, 13, 14, 15, 16, 17, 18, 19 };
-
-        Thread                              listenThread =      null;
-        private Object                      thisLock =          new Object();
-        private volatile bool KillThreads = false;
 
         delegate void addLogCallback(string msg);
 
@@ -69,17 +72,6 @@ namespace DVBViewerController
             }
 
             updateDebugDisplay();
-
-            if (running)
-            {
-                runServer.Visible = false;
-                stopServer.Visible = true;
-            }
-            else
-            {
-                stopServer.Visible = false;
-                runServer.Visible = true;
-            }
 
             /**
              * Zeroconf
@@ -135,363 +127,19 @@ namespace DVBViewerController
             {
                 try
                 {
-                    tcpListener = new TcpListener(IPAddress.Any, port);
-
-                    running = true;
                     runServer.Visible = false;
                     stopServer.Visible = true;
 
-                    addLog("Server running on Port " + port.ToString() + "...");
+                    listener = new MessagingServer(new DVBServiceFactory(this), new MessagingServerConfiguration(new HttpMessageFactory()));
+                    listener.Start(new IPEndPoint(IPAddress.Any, port));
 
-                    listenThread = new Thread(new ThreadStart(ListenForClients));
-                    listenThread.Start();
+                    addLog("Server running on Port " + port.ToString() + "...");
                 }
                 catch (Exception ex)
                 {
                     addLog(ex.Message);
                 }
             }
-        }
-
-        private void ListenForClients()
-        {
-            if (KillThreads)
-                return;
-
-            tcpListener.Start();
-
-            while (true)
-            {
-                try
-                {
-                    TcpClient client = this.tcpListener.AcceptTcpClient();
-
-                    Thread clientThread = new Thread(new ParameterizedThreadStart(HandleClientComm));
-                    clientThread.Start(client);
-                } catch (Exception ex) {
-                    addLog(ex.Message);
-                }
-            }
-        }
-
-        private void HandleClientComm(object client)
-        {
-            if (KillThreads)
-                return;
-
-            TcpClient tcpClient = (TcpClient)client;
-            NetworkStream clientStream = tcpClient.GetStream();
-            ASCIIEncoding encoder = new ASCIIEncoding();
-
-            byte[] message = new byte[4096];
-            int bytesRead;
-
-            while (true)
-            {
-                bytesRead = 0;
-
-                try
-                {
-                    bytesRead = clientStream.Read(message, 0, 4096);
-                }
-                catch
-                {
-                    break;
-                }
-
-                if (bytesRead == 0)
-                {
-                    break;
-                }
-
-                string sBuffer = encoder.GetString(message, 0, bytesRead);
-
-                addLog(sBuffer);
-
-                // Only GET
-                if (sBuffer.Length > 3)
-                {
-                    if (sBuffer.Substring(0, 3) != "GET")
-                    {
-                        addLog("Only GET requests are supported");
-
-                        break;
-                    }
-                }
-
-                // Look for HTTP request
-                int iStartPos = sBuffer.IndexOf("HTTP", 1);
-
-                // Get HTTP Text and Version
-                string sHttpVersion = sBuffer.Substring(iStartPos, 8);
-
-                // Extract the Requested Type and Requested file/directory
-                string sRequest = sBuffer.Substring(0, iStartPos - 1);
-
-                // Extract QueryString
-                string sQuery = sRequest.Substring(sRequest.IndexOf("/", 1)+1, sRequest.Length - sRequest.IndexOf("/", 1) - 1);
-
-                if (sQuery.Length > 0 && sRequest.IndexOf("?") != -1)
-                {
-                    string command = sQuery.Substring(1, sQuery.Length - 1);
-                    addLog("Command: " + command);
-                    string msg;
-
-                    if (!command.Contains('='))
-                    {
-                        switch (command)
-                        {
-                            case "getFavList":
-                                {
-                                    msg = DVBgetFavList();
-                                    
-                                    Byte[] res = BuildResponse(sHttpVersion, msg);
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "getCurrentChanName":
-                                {
-                                    msg = DVBgetCurrentChanName();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, msg);
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "getRecordingService":
-                                {
-                                    msg = DVBgetRecordingService();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, msg);
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendMenu":
-                                {
-                                    DVBsendMenu();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendOk":
-                                {
-                                    DVBsendOk();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendLeft":
-                                {
-                                    DVBsendLeft();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendRight":
-                                {
-                                    DVBsendRight();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendUp":
-                                {
-                                    DVBsendUp();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendDown":
-                                {
-                                    DVBsendDown();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendBack":
-                                {
-                                    DVBsendBack();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendRed":
-                                {
-                                    DVBsendRed();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendYellow":
-                                {
-                                    DVBsendYellow();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendGreen":
-                                {
-                                    DVBsendGreen();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "sendBlue":
-                                {
-                                    DVBsendBlue();
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            default:
-                                {
-                                    break;
-                                }
-                        }
-                    }
-                    else
-                    {
-                        string cmd = command.Split('=')[0];
-
-                        //MessageBox.Show("Cmd: " + cmd);
-
-
-
-                        switch (cmd)
-                        {
-                            case "setChannel":
-                                {
-                                    string value = command.Split('=')[1];
-                                    DVBsetFavChannel(value);
-
-                                    Byte[] res = BuildResponse(sHttpVersion, "Success");
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-                                }
-                            case "getEPG":
-                                {
-                                    string channelId = "";
-                                    string time = "";
-                                    string sYear = "";
-                                    string sMonth = "";
-                                    string sDay = "";
-
-                                    string[] cmds = command.Split('&');
-
-                                    foreach (string befehl in cmds)
-                                    {
-                                        //MessageBox.Show(befehl);
-                                        string[] x = befehl.Split('=');
-                                        switch (x[0])
-                                        {
-                                            case "getEPG":
-                                                {
-                                                    string value = x[1];
-                                                    value = value.Replace('+', ' ');
-                                                    channelId = Uri.UnescapeDataString(value);
-                                                    break;
-                                                }
-                                            case "time":
-                                                {
-                                                    string value = x[1];
-                                                    value = value.Replace('+', ' ');
-                                                    time = Uri.UnescapeDataString(value);
-                                                    break;
-                                                }
-                                            case "year":
-                                                {
-                                                    sYear = x[1];
-                                                    break;
-                                                }
-                                            case "month":
-                                                {
-                                                    sMonth = x[1];
-                                                    break;
-                                                }
-                                            case "day":
-                                                {
-                                                    sDay = x[1];
-                                                    break;
-                                                }
-                                        }
-                                    }
-
-                                    //MessageBox.Show(channelId + "-" + time + "-" + sYear + "-" + sMonth + "-" + sDay);
-                                    msg = DVBgetChannelEPG(channelId, time, sYear, sMonth, sDay);
-
-                                    addLog("Sending:");
-                                    addLog(msg);
-
-                                    Byte[] res = BuildResponse(sHttpVersion, msg);
-                                    clientStream.Write(res, 0, res.Length);
-
-                                    break;
-
-                                }
-                            case "getChannelLogo":
-                                {
-                                    string value = command.Split('=')[1];
-                                    value = value.Replace('+', ' ');
-                                    value = Uri.UnescapeDataString(value);
-
-                                    string filename = DVBgetLogo(value);
-
-                                    if (filename != "")
-                                    {
-                                        MemoryStream mStream = new MemoryStream();
-                                        Bitmap image = ResizeToLongSide(Image.FromFile(filename), 200);
-                                        image.Save(mStream, ImageFormat.Png);
-
-                                        Byte[] img = mStream.ToArray();
-                                        int size = img.Length;
-
-                                        Byte[] res = BuildImageHeader(sHttpVersion, size);
-                                        clientStream.Write(res, 0, res.Length);
-                                        clientStream.Write(img, 0, size);
-                                        addLog("Sent " + size + " Bytes Picture");
-
-                                        mStream.Close();
-                                    }
-                                    else
-                                    {
-                                        clientStream.Close();
-                                    }
-
-                                    break;
-                                }
-                            default:
-                                break;
-                        }
-                    }
-                }
-                clientStream.Close();
-            } // while ende
-            tcpClient.Close();
         }
 
         public Bitmap ResizeToLongSide(Image src, int size)
@@ -523,62 +171,9 @@ namespace DVBViewerController
             return dst;
         }
 
-        public Byte[] BuildImageHeader(string sHttpVersion, int bytes)
-        {
-            string HttpDate = DateTime.Now.ToUniversalTime().ToString("r");
-            String sBuffer = "";
-            sBuffer += "HTTP/1.1 200 OK\n";
-            sBuffer += "Date: " + HttpDate + "\n";
-            sBuffer += "Content-Type: image/png\n";
-            sBuffer += "Connection: close\n";
-            sBuffer += "Content-Length: " + bytes + "\n\n";
-
-            Byte[] res = Encoding.ASCII.GetBytes(sBuffer);
-
-            addLog("Sent " + res.Length + " Bytes Header");
-
-            return res;
-        }
-
-        public Byte[] Build404Response(string sHttpVersion)
-        {
-            string HttpDate = DateTime.Now.ToUniversalTime().ToString("r");
-            String sBuffer = "";
-            sBuffer += "HTTP/1.1 404 Not Found" + "\n";
-            sBuffer += "Date: " + HttpDate + "\n";
-            sBuffer += "Connection: close\n";
-            sBuffer += "Content-Type: text/html\n\n";
-
-            Byte[] bSendData = Encoding.UTF8.GetBytes(sBuffer);
-
-            Byte[] res = Encoding.UTF8.GetBytes(sBuffer);
-            addLog("Sent " + res.Length + " Bytes");
-
-            return res;
-        }
-
-        public Byte[] BuildResponse(string sHttpVersion, string sData)
-        {
-            Byte[] data = Encoding.UTF8.GetBytes(sData);
-            string HttpDate = DateTime.Now.ToUniversalTime().ToString("r");
-            String sBuffer = "";
-            sBuffer += "HTTP/1.1 200 OK\n";
-            sBuffer += "Content-Type: text/html; charset=UTF-8\n";
-            sBuffer += "Connection: close\n";
-            sBuffer += "Content-Length: " + sData.Length + "\n";
-            sBuffer += "Server: DVBViewer Controller Server\n";
-            sBuffer += "Date: " + HttpDate + "\n\n";
-            sBuffer += sData;
-
-            Byte[] res = Encoding.UTF8.GetBytes(sBuffer);
-            addLog("Sent " + res.Length + " Bytes");
-
-            return res;
-        }
-
         #region DVB Commands
 
-        private void DVBsendMenu()
+        public void DVBsendMenu()
         {
             DVBViewer dvb;
 
@@ -594,7 +189,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsendOk()
+        public void DVBsendOk()
         {
             DVBViewer dvb;
 
@@ -610,7 +205,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsendLeft()
+        public void DVBsendLeft()
         {
             DVBViewer dvb;
 
@@ -626,7 +221,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsendRight()
+        public void DVBsendRight()
         {
             DVBViewer dvb;
 
@@ -642,7 +237,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsendUp()
+        public void DVBsendUp()
         {
             DVBViewer dvb;
 
@@ -658,7 +253,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsendDown()
+        public void DVBsendDown()
         {
             DVBViewer dvb;
 
@@ -674,7 +269,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsendBack()
+        public void DVBsendBack()
         {
             DVBViewer dvb;
 
@@ -690,7 +285,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsendRed()
+        public void DVBsendRed()
         {
             DVBViewer dvb;
 
@@ -706,7 +301,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsendYellow()
+        public void DVBsendYellow()
         {
             DVBViewer dvb;
 
@@ -722,7 +317,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsendGreen()
+        public void DVBsendGreen()
         {
             DVBViewer dvb;
 
@@ -738,7 +333,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsendBlue()
+        public void DVBsendBlue()
         {
             DVBViewer dvb;
 
@@ -754,7 +349,7 @@ namespace DVBViewerController
             }
         }
 
-        private void DVBsetFavChannel(string channelId)
+        public void DVBsetFavChannel(string channelId)
         {
             DVBViewer dvb;
 
@@ -773,9 +368,9 @@ namespace DVBViewerController
                 addLog(ex.Message);
             }
         }
-        
 
-        private string DVBgetChannelEPG(string channelId, string time, string sYear, string sMonth, string sDay)
+
+        public string DVBgetChannelEPG(string channelId, string time, string sYear, string sMonth, string sDay)
         {
             DVBViewer dvb;
             string resp = "";
@@ -863,7 +458,7 @@ namespace DVBViewerController
             return resp;
         }
 
-        private string DVBgetCurrentChanName()
+        public string DVBgetCurrentChanName()
         {
             DVBViewer dvb;
             string resp = "";
@@ -885,7 +480,7 @@ namespace DVBViewerController
             return resp;
         }
 
-        private string DVBgetFavList()
+        public string DVBgetFavList()
         {
             DVBViewer dvb;
             string resp="";
@@ -959,7 +554,7 @@ namespace DVBViewerController
             return resp;
         }
 
-        private string DVBgetRecordingService()
+        public string DVBgetRecordingService()
         {
             string resp = "";
             ushort port;
@@ -988,7 +583,7 @@ namespace DVBViewerController
             return resp;
         }
 
-        private string DVBgetLogo(string file)
+        public string DVBgetLogo(string file)
         {
             DVBViewer dvb;
             string filename = "";
@@ -1030,7 +625,7 @@ namespace DVBViewerController
 
         #endregion
 
-        private void addLog(string msg)
+        public void addLog(string msg)
         {
             if (tbLog.InvokeRequired)
             {
@@ -1062,17 +657,12 @@ namespace DVBViewerController
         {
             tbPort.Enabled = true;
 
-            if (running)
-            {
-                tcpListener.Stop();
-                listenThread.Abort();
-                running = false;
-                stopServer.Visible = false;
-                runServer.Visible = true;
+            listener.Stop();
+            stopServer.Visible = false;
+            runServer.Visible = true;
 
-                addLog("Server stopping...");
-            }
-
+            addLog("Server stopping...");
+                
             mService.Stop();
             mRegistrar.Stop();
         }
@@ -1098,31 +688,7 @@ namespace DVBViewerController
 
             Properties.Settings.Default.Save();
 
-            if (!listenThread.Join(0))
-            {
-                e.Cancel = true;
-                KillThreads = true;
-                tcpListener.Stop();
-                listenThread.Abort();
-                var timer = new System.Timers.Timer();
-                timer.AutoReset = false;
-                timer.SynchronizingObject = this;
-                timer.Interval = 1000;
-                timer.Elapsed += (send, args) =>
-                {
-                    if (listenThread.Join(0))
-                    {
-                        Close();
-                    }
-                    else
-                    {
-                        timer.Start();
-                    }
-                };
-                timer.Start();
-            }
-
-
+            listener.Stop();
         }
 
         public static bool IsIPv4(string value)
@@ -1237,22 +803,7 @@ namespace DVBViewerController
 
         private void btnDebug_Click(object sender, EventArgs e)
         {
-            
-
-        }
-
-        private void DVBServer_Load(object sender, EventArgs e)
-        {
-            /*
-            try
-            {
-                mRegistrar = mService.Register(0, 0, System.Environment.UserName, "_dvbctrl._tcp", "local", null, (ushort)this.port, null, mEventManager);
-            }
-            catch (Exception ex)
-            {
-                addLog(ex.Message);
-            }
-             */
+            DVBsendMenu();
         }
 
         private void btnRecService_Click(object sender, EventArgs e)
