@@ -71,6 +71,20 @@ namespace DVBViewerController
                                 b = Encoding.UTF8.GetBytes(dvb.DVBgetRecordingService());
                                 break;
                             }
+                        case "sendVolUp":
+                            {
+                                dvb.DVBsendVolUp();
+
+                                b = Encoding.UTF8.GetBytes("Success");
+                                break;
+                            }
+                        case "sendVolDown":
+                            {
+                                dvb.DVBsendVolDown();
+
+                                b = Encoding.UTF8.GetBytes("Success");
+                                break;
+                            }
                         case "sendMenu":
                             {
                                 dvb.DVBsendMenu();
@@ -158,10 +172,6 @@ namespace DVBViewerController
                 {
                     string cmd = command.Split('=')[0];
 
-                    //MessageBox.Show("Cmd: " + cmd);
-
-
-
                     switch (cmd)
                     {
                         case "setChannel":
@@ -247,12 +257,6 @@ namespace DVBViewerController
                                     Byte[] img = mStream.ToArray();
                                     int size = img.Length;
 
-                                    /*
-                                    Byte[] res = BuildImageHeader(sHttpVersion, size);
-                                    clientStream.Write(res, 0, res.Length);
-                                    clientStream.Write(img, 0, size);
-                                    addLog("Sent " + size + " Bytes Picture");
-                                    */
                                     b = img;
 
                                     mStream.Close();

@@ -237,6 +237,38 @@ namespace DVBViewerController
             }
         }
 
+        public void DVBsendVolUp()
+        {
+            DVBViewer dvb;
+
+            try
+            {
+                dvb = (DVBViewer)System.Runtime.InteropServices.Marshal.GetActiveObject("DVBViewerServer.DVBViewer");
+
+                dvb.SendCommand(26);
+            }
+            catch (Exception ex)
+            {
+                addLog(ex.Message);
+            }
+        }
+
+        public void DVBsendVolDown()
+        {
+            DVBViewer dvb;
+
+            try
+            {
+                dvb = (DVBViewer)System.Runtime.InteropServices.Marshal.GetActiveObject("DVBViewerServer.DVBViewer");
+
+                dvb.SendCommand(27);
+            }
+            catch (Exception ex)
+            {
+                addLog(ex.Message);
+            }
+        }
+
         public void DVBsendUp()
         {
             DVBViewer dvb;
