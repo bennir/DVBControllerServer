@@ -12,11 +12,8 @@ using System.Threading;
 using System.Windows.Forms;
 using Bonjour;
 using DVBViewerServer;
-using Griffin.Networking.Servers;
-using Griffin.Networking.Protocol.Http;
-using Griffin.Networking.Buffers;
-using Griffin.Networking.Protocol.Http.Protocol;
-using Griffin.Networking.Messaging;
+using Microsoft.Owin.Hosting;
+using DVBViewerController.Models;
 
 
 namespace DVBViewerController
@@ -25,7 +22,7 @@ namespace DVBViewerController
 
     public partial class DVBServer : Form
     {
-        public MessagingServer              listener;
+        public IDisposable server = null;
 
         private short                       port =              0;
 
@@ -59,6 +56,25 @@ namespace DVBViewerController
             recPort = Properties.Settings.Default.recPort;
 
             tbPort.Text = Properties.Settings.Default.port;
+
+            try
+            {
+                mService = new DNSSDService();
+            }
+            catch
+            {
+                new BonjourErrorForm().ShowDialog();
+                Application.Exit();
+            }
+
+            try
+            {
+                mRegistrar = mService.Register(0, 0, System.Environment.UserName, "_dvbctrl._tcp", "local", null, (ushort)this.port, null, mEventManager);
+            }
+            catch (Exception ex)
+            {
+                addLog(ex.Message);
+            }
 
             if (Properties.Settings.Default.startServer)
             {
@@ -104,25 +120,6 @@ namespace DVBViewerController
                 MessageBox.Show("Bitte Zahl als Port angeben!");
             }
 
-            try
-            {
-                mService = new DNSSDService();
-            }
-            catch
-            {
-                new BonjourErrorForm().ShowDialog();
-                Application.Exit();
-            }
-
-            try
-            {
-                mRegistrar = mService.Register(0, 0, System.Environment.UserName, "_dvbctrl._tcp", "local", null, (ushort)this.port, null, mEventManager);
-            }
-            catch (Exception ex)
-            {
-                addLog(ex.Message);
-            }
-
             if (!error)
             {
                 try
@@ -130,8 +127,13 @@ namespace DVBViewerController
                     runServer.Visible = false;
                     stopServer.Visible = true;
 
-                    listener = new MessagingServer(new DVBServiceFactory(this), new MessagingServerConfiguration(new HttpMessageFactory()));
-                    listener.Start(new IPEndPoint(IPAddress.Any, port));
+                    port = Convert.ToInt16(tbPort.Text);
+
+
+                    string baseAddress = "http://+:" + port + "/";
+
+                    IDisposable s = WebApp.Start<DVBVCS>(url: baseAddress);
+                    server = s;
 
                     addLog("Server running on Port " + port.ToString() + "...");
                 }
@@ -512,80 +514,6 @@ namespace DVBViewerController
             return resp;
         }
 
-        public string DVBgetFavList()
-        {
-            DVBViewer dvb;
-            string resp="";
-
-            try
-            {
-                dvb = (DVBViewer)System.Runtime.InteropServices.Marshal.GetActiveObject("DVBViewerServer.DVBViewer");
-
-                int i;
-
-                IFavoritesManager fav = dvb.FavoritesManager;
-                IFavoritesCollection favcol = fav.GetFavorites();
-                IEPGManager epgManager = dvb.EPGManager;
-
-                DateTime start = DateTime.Now;
-                DateTime stop = start.AddSeconds(1);
-
-                resp += "{ \"channels\": [";
-
-                for (i = 0; i < favcol.Count; i++)
-                {
-                    String channelName = favcol[i].Name;
-                    string pattern = "\\s\\(.+\\)";
-                    Regex rgx = new Regex(pattern);
-                    channelName = rgx.Replace(channelName, "");
-
-                    resp += "{";
-                    resp += "\"name\" : \"" + channelName + "\",";
-                    resp += "\"id\" : \"" + favcol[i].Nr + "\",";
-                    resp += "\"group\" : \"" + favcol[i].Group + "\",";
-                    resp += "\"channelid\" : \"" + favcol[i].ChannelID + "\"";
-
-                    try
-                    {
-                        IChannelCollection col = dvb.ChannelManager;
-
-                        int channelNr = 0;
-                        IChannelItem channel = col.GetChannel(favcol[i].ChannelID, ref channelNr);
-                        IEPGCollection epgCol = epgManager.Get(channel.Tuner.SID, channel.Tuner.TransportStreamID, start, stop);
-
-                        string epgTitle = epgCol[0].Title;
-                        string epgTime = epgCol[0].Time.ToShortTimeString();
-                        string epgDuration = epgCol[0].Duration.ToShortTimeString();
-
-                        resp += ",";
-                        resp += "\"epgtitle\" : \"" + Uri.EscapeDataString(epgTitle) + "\",";
-                        resp += "\"epgtime\" : \"" + epgTime + "\",";
-                        resp += "\"epgduration\" : \"" + epgDuration + "\"";
-                    }
-                    catch (Exception ex)
-                    {
-                        // Can not retrieve EPG
-                        resp += ",";
-                        resp += "\"epgtitle\" : \"\",";
-                        resp += "\"epgtime\" : \"\",";
-                        resp += "\"epgduration\" : \"\"";
-                    }
-
-                    resp += "}";
-                    if (i != (favcol.Count - 1))
-                        resp += ",";
-                }
-                resp += "] }";
-            }
-            catch (Exception ex)
-            {
-                addLog("DVBViewer not running");
-                resp += "{ \"channels\": [";
-                resp += "] }";
-            }
-            return resp;
-        }
-
         public string DVBgetRecordingService()
         {
             string resp = "";
@@ -689,14 +617,15 @@ namespace DVBViewerController
         {
             tbPort.Enabled = true;
 
-            listener.Stop();
+            if (!server.Equals(null))
+            {
+                server.Dispose();
+            }
+
             stopServer.Visible = false;
             runServer.Visible = true;
 
             addLog("Server stopping...");
-                
-            mService.Stop();
-            mRegistrar.Stop();
         }
 
         private void DVBServer_FormClosing(object sender, FormClosingEventArgs e)
@@ -720,7 +649,10 @@ namespace DVBViewerController
 
             Properties.Settings.Default.Save();
 
-            listener.Stop();
+            if (!server.Equals(null))
+            {
+                server.Dispose();
+            }
         }
 
         public static bool IsIPv4(string value)
