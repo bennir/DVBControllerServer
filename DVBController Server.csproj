@@ -42,6 +42,9 @@
     <ApplicationIcon>Resources\DVB_Viewer.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup />
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Owin">
       <HintPath>packages\Microsoft.Owin.2.0.2\lib\net45\Microsoft.Owin.dll</HintPath>
@@ -89,24 +92,31 @@
       <DependentUpon>BonjourErrorForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Controllers\ChannelController.cs" />
+    <Compile Include="Controllers\CommandController.cs" />
+    <Compile Include="Controllers\EpgController.cs" />
+    <Compile Include="Controllers\LogoController.cs" />
+    <Compile Include="Controllers\RecordingServiceController.cs" />
     <Compile Include="DVBServer.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="DVBServer.Designer.cs">
       <DependentUpon>DVBServer.cs</DependentUpon>
     </Compile>
-    <Compile Include="DVBService.cs" />
     <Compile Include="DVBVCS.cs" />
     <Compile Include="Models\Channel.cs" />
+    <Compile Include="Models\EpgInfo.cs" />
+    <Compile Include="Models\RecordingService.cs" />
+    <Compile Include="NetAclChecker.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RecordingService.cs">
+    <Compile Include="RecordingServiceForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="RecordingService.Designer.cs">
-      <DependentUpon>RecordingService.cs</DependentUpon>
+    <Compile Include="RecordingServiceForm.Designer.cs">
+      <DependentUpon>RecordingServiceForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Services\ChannelRepository.cs" />
+    <Compile Include="Services\LogoRepository.cs" />
     <EmbeddedResource Include="BonjourErrorForm.resx">
       <DependentUpon>BonjourErrorForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -124,6 +134,9 @@
       <DesignTime>True</DesignTime>
     </Compile>
     <None Include="app.config" />
+    <None Include="app.manifest">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -159,8 +172,8 @@
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="RecordingService.resx">
-      <DependentUpon>RecordingService.cs</DependentUpon>
+    <EmbeddedResource Include="RecordingServiceForm.resx">
+      <DependentUpon>RecordingServiceForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Resources\DVB_Viewer.ico" />
   </ItemGroup>

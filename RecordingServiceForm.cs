@@ -3,11 +3,11 @@ using System.Windows.Forms;
 
 namespace DVBViewerController
 {
-    public partial class RecordingService : Form
+    public partial class RecordingServiceForm : Form
     {
         DVBServer mainForm = null;
 
-        public RecordingService(DVBServer form)
+        public RecordingServiceForm(DVBServer form)
         {
             this.mainForm = form;
 

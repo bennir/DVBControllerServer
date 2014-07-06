@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace DVBViewerController.Models
 {
     public class Channel
@@ -16,10 +11,6 @@ namespace DVBViewerController.Models
 
         public string ChannelId { get; set; }
 
-        public string EpgTitle { get; set; }
-
-        public string EpgTime { get; set; }
-
-        public string EpgDuration { get; set; }
+        public EpgInfo Epg { get; set; }
     }
 }

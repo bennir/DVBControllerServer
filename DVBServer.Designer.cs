@@ -31,10 +31,10 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DVBServer));
             this.btnDebug = new System.Windows.Forms.Button();
-            this.runServer = new System.Windows.Forms.Button();
+            this.btnStart = new System.Windows.Forms.Button();
             this.tbPort = new System.Windows.Forms.TextBox();
             this.tbLog = new System.Windows.Forms.TextBox();
-            this.stopServer = new System.Windows.Forms.Button();
+            this.btnStop = new System.Windows.Forms.Button();
             this.DVBNotification = new System.Windows.Forms.NotifyIcon(this.components);
             this.lblPort = new System.Windows.Forms.Label();
             this.cbStartServer = new System.Windows.Forms.CheckBox();
@@ -53,15 +53,15 @@
             this.btnDebug.UseVisualStyleBackColor = true;
             this.btnDebug.Click += new System.EventHandler(this.btnDebug_Click);
             // 
-            // runServer
+            // btnStart
             // 
-            this.runServer.Location = new System.Drawing.Point(102, 8);
-            this.runServer.Name = "runServer";
-            this.runServer.Size = new System.Drawing.Size(75, 23);
-            this.runServer.TabIndex = 2;
-            this.runServer.Text = "Start";
-            this.runServer.UseVisualStyleBackColor = true;
-            this.runServer.Click += new System.EventHandler(this.runServer_Click);
+            this.btnStart.Location = new System.Drawing.Point(102, 8);
+            this.btnStart.Name = "btnStart";
+            this.btnStart.Size = new System.Drawing.Size(75, 23);
+            this.btnStart.TabIndex = 2;
+            this.btnStart.Text = "Start";
+            this.btnStart.UseVisualStyleBackColor = true;
+            this.btnStart.Click += new System.EventHandler(this.runServer_Click);
             // 
             // tbPort
             // 
@@ -82,16 +82,16 @@
             this.tbLog.Size = new System.Drawing.Size(342, 312);
             this.tbLog.TabIndex = 5;
             // 
-            // stopServer
+            // btnStop
             // 
-            this.stopServer.Location = new System.Drawing.Point(102, 8);
-            this.stopServer.Name = "stopServer";
-            this.stopServer.Size = new System.Drawing.Size(75, 23);
-            this.stopServer.TabIndex = 6;
-            this.stopServer.Text = "Stop";
-            this.stopServer.UseVisualStyleBackColor = true;
-            this.stopServer.Visible = false;
-            this.stopServer.Click += new System.EventHandler(this.stopServer_Click);
+            this.btnStop.Location = new System.Drawing.Point(102, 8);
+            this.btnStop.Name = "btnStop";
+            this.btnStop.Size = new System.Drawing.Size(75, 23);
+            this.btnStop.TabIndex = 6;
+            this.btnStop.Text = "Stop";
+            this.btnStop.UseVisualStyleBackColor = true;
+            this.btnStop.Visible = false;
+            this.btnStop.Click += new System.EventHandler(this.stopServer_Click);
             // 
             // DVBNotification
             // 
@@ -161,10 +161,10 @@
             this.Controls.Add(this.cbMinimizeOnStart);
             this.Controls.Add(this.cbStartServer);
             this.Controls.Add(this.lblPort);
-            this.Controls.Add(this.stopServer);
+            this.Controls.Add(this.btnStop);
             this.Controls.Add(this.tbLog);
             this.Controls.Add(this.tbPort);
-            this.Controls.Add(this.runServer);
+            this.Controls.Add(this.btnStart);
             this.Controls.Add(this.btnDebug);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
@@ -180,10 +180,10 @@
         #endregion
 
         private System.Windows.Forms.Button btnDebug;
-        private System.Windows.Forms.Button runServer;
+        private System.Windows.Forms.Button btnStart;
         private System.Windows.Forms.TextBox tbPort;
         private System.Windows.Forms.TextBox tbLog;
-        private System.Windows.Forms.Button stopServer;
+        private System.Windows.Forms.Button btnStop;
         private System.Windows.Forms.NotifyIcon DVBNotification;
         private System.Windows.Forms.Label lblPort;
         private System.Windows.Forms.CheckBox cbStartServer;

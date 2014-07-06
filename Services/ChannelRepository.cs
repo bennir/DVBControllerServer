@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DVBViewerController.Models;
+﻿using DVBViewerController.Models;
 using DVBViewerServer;
+using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
 namespace DVBViewerController.Services
@@ -53,9 +50,13 @@ namespace DVBViewerController.Services
                         string epgTime = epgCol[0].Time.ToShortTimeString();
                         string epgDuration = epgCol[0].Duration.ToShortTimeString();
 
-                        chan.EpgTitle = epgTitle;
-                        chan.EpgTime = epgTime;
-                        chan.EpgDuration = epgDuration;
+                        EpgInfo epg = new EpgInfo();
+
+                        epg.Title = epgTitle;
+                        epg.Time = epgTime;
+                        epg.Duration = epgDuration;
+
+                        chan.Epg = epg;
                     }
                     catch (Exception ex)
                     {
@@ -112,9 +113,13 @@ namespace DVBViewerController.Services
                     string epgTime = epgCol[0].Time.ToShortTimeString();
                     string epgDuration = epgCol[0].Duration.ToShortTimeString();
 
-                    resp.EpgTitle = epgTitle;
-                    resp.EpgTime = epgTime;
-                    resp.EpgDuration = epgDuration;
+                    EpgInfo epg = new EpgInfo();
+
+                    epg.Title = epgTitle;
+                    epg.Time = epgTime;
+                    epg.Duration = epgDuration;
+
+                    resp.Epg = epg;
                 }
                 catch (Exception ex)
                 {
@@ -126,6 +131,28 @@ namespace DVBViewerController.Services
             {
             }
 
+            return resp;
+        }
+
+        public Channel GetCurrentChannel()
+        {
+            DVBViewer dvb;
+            Channel resp = new Channel();
+
+            try
+            {
+                dvb = (DVBViewer)System.Runtime.InteropServices.Marshal.GetActiveObject("DVBViewerServer.DVBViewer");
+
+
+
+                IChannelItem chan = dvb.CurrentChannel;
+
+                resp.Name = chan.Name;
+                resp.ChannelId = chan.ChannelID;
+            }
+            catch (Exception ex)
+            {
+            }
             return resp;
         }
     }
