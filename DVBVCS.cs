@@ -23,6 +23,7 @@ namespace DVBViewerController
             config.Formatters.JsonFormatter.SupportedMediaTypes.Add(new MediaTypeHeaderValue("text/html"));
             config.EnsureInitialized();
 
+
             appBuilder.UseWebApi(config);
         }
     }

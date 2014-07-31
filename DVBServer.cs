@@ -99,6 +99,7 @@ namespace DVBViewerController
 
         public void ServiceRegistered(DNSSDService service, DNSSDFlags flags, String name, String regType, String domain)
         {
+            addLog("Registered");
             try
             {
                 mBrowser = mService.Browse(0, 0, "_dvbctrl._udp", null, mEventManager);
@@ -331,7 +332,7 @@ namespace DVBViewerController
 
         private void btnDebug_Click(object sender, EventArgs e)
         {
-
+            mService.Browse(0, 0, "_dvbctrl._udp", null, mEventManager);
         }
 
         private void btnRecService_Click(object sender, EventArgs e)

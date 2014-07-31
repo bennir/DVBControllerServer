@@ -104,6 +104,7 @@
     </Compile>
     <Compile Include="DVBVCS.cs" />
     <Compile Include="Models\Channel.cs" />
+    <Compile Include="Models\DVBCommand.cs" />
     <Compile Include="Models\EpgInfo.cs" />
     <Compile Include="Models\RecordingService.cs" />
     <Compile Include="NetAclChecker.cs" />

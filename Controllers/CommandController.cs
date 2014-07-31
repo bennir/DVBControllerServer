@@ -1,4 +1,5 @@
-﻿using DVBViewerServer;
+﻿using DVBViewerController.Models;
+using DVBViewerServer;
 using System;
 using System.Net;
 using System.Net.Http;
@@ -8,10 +9,8 @@ namespace DVBViewerController.Controllers
 {
     public class CommandController : ApiController
     {
-        // POST dvb/Command/111
-        [Route("dvb/Command/{id:int}")]        
-        [HttpPost]
-        public HttpResponseMessage sendMenu(int command)
+        // POST dvb/Command
+        public HttpResponseMessage Post([FromBody] DVBCommand cmd)
         {
             DVBViewer dvb;
 
@@ -19,13 +18,13 @@ namespace DVBViewerController.Controllers
             {
                 dvb = (DVBViewer)System.Runtime.InteropServices.Marshal.GetActiveObject("DVBViewerServer.DVBViewer");
 
-                dvb.SendCommand(command);
+                dvb.SendCommand(cmd.Command);
 
                 return Request.CreateResponse(HttpStatusCode.OK);
             }
             catch (Exception ex)
             {
-                return Request.CreateResponse(HttpStatusCode.NotFound);                
+                return Request.CreateResponse(HttpStatusCode.NotFound);
             }
         }
     }
