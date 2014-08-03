@@ -2,6 +2,7 @@
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Web;
 using System.Web.Http;
 
 namespace DVBViewerController.Controllers
@@ -21,7 +22,9 @@ namespace DVBViewerController.Controllers
         {
             HttpResponseMessage response = new HttpResponseMessage();
 
-            MemoryStream ms = logoRepository.GetImage(channelName);
+            string name = HttpUtility.UrlDecode(channelName);
+
+            MemoryStream ms = logoRepository.GetImage(name);
 
             if (ms != null) {
                 response.Content = new StreamContent(ms); // this file stream will be closed by lower layers of web api for you once the response is completed.

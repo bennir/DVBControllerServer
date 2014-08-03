@@ -46,16 +46,16 @@ namespace DVBViewerController.Controller
             return channelRepository.GetCurrentChannel().Name;
         }
 
-        // POST dvb/Channel/set/1
-        [Route("dvb/Channel/set/{channelId}")]
-        [HttpPost]
-        public HttpResponseMessage sendMenu(string channelId)
+        // POST dvb/Channel/
+        public HttpResponseMessage Post([FromBody] Channel channel)
         {
             DVBViewer dvb;
 
             try
             {
                 dvb = (DVBViewer)System.Runtime.InteropServices.Marshal.GetActiveObject("DVBViewerServer.DVBViewer");
+
+                String channelId = channel.ChannelId;
 
                 foreach (char x in channelId)
                 {

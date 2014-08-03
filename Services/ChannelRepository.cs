@@ -32,6 +32,10 @@ namespace DVBViewerController.Services
                     Regex rgx = new Regex(pattern);
                     channelName = rgx.Replace(channelName, "");
 
+                    pattern = "\\s\\[.+\\)";
+                    rgx = new Regex(pattern);
+                    channelName = rgx.Replace(channelName, "");
+
                     Channel chan = new Channel();
                     chan.Name = channelName;
                     chan.Id = favcol[i].Nr;
@@ -47,6 +51,10 @@ namespace DVBViewerController.Services
                         IEPGCollection epgCol = epgManager.Get(channel.Tuner.SID, channel.Tuner.TransportStreamID, start, stop);
 
                         string epgTitle = epgCol[0].Title;
+                        pattern = "\\<.+\\>\\s";
+                        rgx = new Regex(pattern);
+                        epgTitle = rgx.Replace(epgTitle, "");
+
                         string epgTime = epgCol[0].Time.ToShortTimeString();
                         string epgDuration = epgCol[0].Duration.ToShortTimeString();
 
