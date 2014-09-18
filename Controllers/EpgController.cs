@@ -2,6 +2,7 @@
 using DVBViewerServer;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Web.Http;
 
 namespace DVBViewerController.Controllers
@@ -10,7 +11,7 @@ namespace DVBViewerController.Controllers
     {
         // GET dvb/Epg/chanId/Time/Year/Month/Day
         [Route("dvb/Epg/{channelId}")]
-        public IEnumerable<EpgInfo> Get(string channelId, string time = "Current", int year = 2014, int month = 7, int day = 6)
+        public IEnumerable<EpgInfo> Get(string channelId, string time = "Current", int year = 0, int month = 0, int day = 0, int hour = 0, int minute = 0, int second = 0)
         {
             List <EpgInfo> resp = new List<EpgInfo>();
             DVBViewer dvb;
@@ -22,6 +23,7 @@ namespace DVBViewerController.Controllers
                 IChannelCollection col = dvb.ChannelManager;
 
                 int channelNr = 0;
+                channelId = Uri.UnescapeDataString(channelId);
                 IChannelItem channel = col.GetChannel(channelId, ref channelNr);
 
                 IEPGManager epgManager = dvb.EPGManager;
@@ -30,40 +32,19 @@ namespace DVBViewerController.Controllers
                 DateTime stop = DateTime.Now;
 
 
-                switch (time)
+                if(time == "Current") 
                 {
-                    case "Current":
-                        start = new DateTime(year, month, day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
-                        stop = start.AddHours(2);
-                        break;
-                    case "In 1 Hour":
-                        start = new DateTime(year, month, day, DateTime.Now.AddHours(1).Hour, DateTime.Now.Minute, DateTime.Now.Second);
-                        stop = start.AddHours(2);
-                        break;
-                    case "20:15":
-                        start = new DateTime(year, month, day, 20, 15, 0);
-                        stop = start.AddHours(2);
-                        break;
-                    case "Morning":
-                        start = new DateTime(year, month, day, 6, 0, 0);
-                        stop = start.AddHours(5);
-                        break;
-                    case "Noon":
-                        start = new DateTime(year, month, day, 11, 0, 0);
-                        stop = start.AddHours(5);
-                        break;
-                    case "Afternoon":
-                        start = new DateTime(year, month, day, 14, 0, 0);
-                        stop = start.AddHours(5);
-                        break;
-                    case "Evening":
-                        start = new DateTime(year, month, day, 17, 0, 0);
-                        stop = start.AddHours(5);
-                        break;
-                    case "Night":
-                        start = new DateTime(year, month, day, 22, 0, 0);
-                        stop = start.AddHours(5);
-                        break;
+                    start = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second);
+                    stop = start.AddHours(10);
+                }
+                else
+                {
+                    long binaryTime = Convert.ToInt64(time);
+
+                    start = DateTime.FromBinary(binaryTime);
+                    start = start.AddMinutes(1);
+
+                    stop = start.AddHours(10);
                 }
 
                 IEPGCollection epgCol = epgManager.Get(channel.Tuner.SID, channel.Tuner.TransportStreamID, start, stop);
@@ -71,12 +52,22 @@ namespace DVBViewerController.Controllers
                 for (int i = 0; i < epgCol.Count; i++)
                 {
                     EpgInfo epg = new EpgInfo();
-
                     epg.Time = epgCol[i].Time.ToShortTimeString();
-                    epg.ChannelName = channel.Name;
-                    epg.Title = Uri.EscapeUriString(epgCol[i].Title);
-                    epg.Desc = Uri.EscapeUriString(epgCol[i].Description.Split('[')[0]);
-                    epg.Duration = epgCol[i].Duration.Hour + "h " + epgCol[i].Duration.Minute + "min";
+                    epg.EndTime = epgCol[i].EndTime.ToBinary();
+                    epg.ChannelName = channel.ChannelID;
+                    epg.Title = epgCol[i].Title;
+                    epg.Desc = epgCol[i].Description.Split('[')[0];
+
+                    epg.Duration = epgCol[0].Duration.ToShortTimeString();
+                    epg.Date = epgCol[i].Time.ToShortDateString();
+
+                    string pattern = "<.+>";
+                    Regex rgx = new Regex(pattern);
+                    epg.Title = rgx.Replace(epg.Title, "");
+                    epg.Desc = rgx.Replace(epg.Desc, "");
+
+                    epg.Title = Uri.EscapeUriString(epg.Title);
+                    epg.Desc = Uri.EscapeUriString(epg.Desc);
 
                     resp.Add(epg);
                 }

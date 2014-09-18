@@ -17,7 +17,7 @@ namespace DVBViewerController.Services
             if (!fileName.Equals(""))
             {
                 MemoryStream mStream = new MemoryStream();
-                Bitmap image = ResizeToLongSide(Image.FromFile(fileName), 200);
+                Bitmap image = new Bitmap(Image.FromFile(fileName));
                 image.Save(mStream, ImageFormat.Png);
                 mStream.Position = 0;
 
